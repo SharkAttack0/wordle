@@ -1,4 +1,3 @@
-#![allow(unused)]
 use colored::*;
 use core::panic;
 use rand::*;
@@ -6,9 +5,9 @@ use std::collections::HashMap;
 use std::fs;
 use std::io;
 use std::path::Path;
-use std::str::from_utf8;
 use std::vec;
 use strum::*;
+
 
 const CHARS_ALLOWED_ENGLISH: [char; 26] = [
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
@@ -27,13 +26,16 @@ const CHARS_ORDER_BULGARIAN: [char; 32] = [
     'г', 'х', 'й', 'к', 'л', '\n', 'з', 'ь', 'ц', 'ж', 'б', 'н', 'м',
 ];
 
-//find better dictionaries
-//refractor
-//color states of chars
 
-//current problem: need a way to save CorPos and IncorPos char's state with each user guess
-//the point is to have a history of the player's guesses so that they can be color printed
-//also, maybe find a better way to print/save colored strings/chars
+//bulgarian 'ш','щ' debugging conclusion - error "stream did not contain valid UTF-8" is not because of
+//the bulgarian chars, but rather the backspace being pressed when language is bulgarian
+//could be wsl terminal's fault, idk if program can handle that at all 
+
+//edit dictionaries
+//full bulgarian language support
+
+//when a char is used twice in a guess and one of the chars is updated, the other gets wrongly updated as well
+
 
 #[derive(Debug, PartialEq, EnumIter, Clone, Copy)]
 enum CharState {
@@ -42,50 +44,117 @@ enum CharState {
     UsedIncorPos,
     UsedNotInWordle,
 }
-
+#[derive(Debug, PartialEq, Eq, Hash)]
 enum Language {
     English,
     Bulgarian,
 }
 
+struct Messages {
+    user_lost: String,
+    user_won: String,
+    guess_num: String,
+    wordle_was: String,
+    play_again_query: String,
+    guess_query: String,
+    guesses_so_far: String,
+    goodbye: String,
+    warn_dict_illegal: String,
+    guess_last: String,
+    dict_not_found: String,
+    err: String, 
+    err_invalid_input: String,
+    err_word_lenght: String,
+    err_word_not_exist: String,
+    user_input_yes: String,
+    user_input_no: String,
+
+}
+
 struct LanguageSpecs<'a> {
-    language: Language,
     dictionary_path: &'a Path,
     allowed_chars: Vec<char>,
     chars_order: Vec<char>,
+    messages: Messages,
 }
 
 fn main() {
-    //choose language
+    let msg_en: Messages = Messages {
+        user_lost: String::from("You ran out of guesses! You lost!"),
+        user_won: String::from("Congradulation! You won!"),
+        guess_num: String::from("Guess #"),
+        wordle_was: String::from("The wordle was"),
+        play_again_query: String::from("Would you like to play again? y/n"),
+        guess_query: String::from("Input guess:"),
+        guesses_so_far: String::from("Your guesses so far:"),
+        goodbye: String::from("Goodbye!"),
+        warn_dict_illegal: String::from("WARNING: DICTIONARY CONTAINS ILLEGAL CHARACTER!:"),
+        guess_last: String::from("Last guess!"),
+        dict_not_found: String::from("Dictionary not found!"),
+        err: String::from("Error!"), 
+        err_invalid_input: String::from("Invalid input!"),
+        err_word_lenght: String::from("The word's length is incorrect!"),
+        err_word_not_exist: String::from("The word doesn't exist!"),
+        user_input_yes: String::from("yes"),
+        user_input_no: String::from("no"),
+    };
+
+    let msg_bul: Messages = Messages {
+        user_lost: String::from("Докадките ти свършиха! Ти загуби!"),
+        user_won: String::from("Поздравления! Ти спечели!"),
+        guess_num: String::from("Догадка #"),
+        wordle_was: String::from("Думата беше"),
+        play_again_query: String::from("Искаш ли да играеш пак? д/н"),
+        guess_query: String::from("Въведи догадка:"),
+        guesses_so_far: String::from("Твоите догадки дотук:"),
+        goodbye: String::from("Довиждане!"),
+        warn_dict_illegal: String::from("ВНИМАНИЕ: РЕЧНИКЪТ СЪДЪРЖА НЕЗАКОННИ СИМВОЛИ!:"),
+        guess_last: String::from("Последна догадка!"),
+        dict_not_found: String::from("Речник не е намерен!"),
+        err: String::from("Грешка!"), 
+        err_invalid_input: String::from("Невалидно въвеждане!"),
+        err_word_lenght: String::from("Дължината на думата е неправилна!"),
+        err_word_not_exist: String::from("Тази дума не съществува!"),
+        user_input_yes: String::from("да"),
+        user_input_no: String::from("не"),
+    };
+
     let lang_spec_en = LanguageSpecs {
-        language: Language::English,
         dictionary_path: Path::new("src/english_dictionary.txt"),
         allowed_chars: CHARS_ALLOWED_ENGLISH.to_vec(),
         chars_order: CHARS_ORDER_ENGLISH.to_vec(),
+        messages: msg_en,
     };
 
     let lang_spec_bul = LanguageSpecs {
-        language: Language::Bulgarian,
         dictionary_path: Path::new("src/bulgarian_dictionary.txt"),
         allowed_chars: CHARS_ALLOWED_BULGARIAN.to_vec(),
         chars_order: CHARS_ORDER_BULGARIAN.to_vec(),
+        messages: msg_bul,
     };
 
-    let chosen_lang = query_lang();
-    let game_lang_spec = match chosen_lang {
-        Language::English => lang_spec_en,
-        Language::Bulgarian => lang_spec_bul,
-    };
+    //choose language
+    let chosen_lang: Language = query_lang();
 
-    let wordle_len = match chosen_lang {
-        Language::English => 5,
-        Language::Bulgarian => 10,
-    };
+    let game_lang_spec :LanguageSpecs;
+    let wordle_len:usize;
+
+    match chosen_lang {
+        Language::English => {
+            game_lang_spec = lang_spec_en;
+            wordle_len = 5;
+        },
+        Language::Bulgarian => {
+            game_lang_spec = lang_spec_bul;
+            wordle_len = 10;
+        },
+    }
+
 
     //read file
     let words: String = match fs::read_to_string(game_lang_spec.dictionary_path) {
         Ok(content) => content.to_lowercase(),
-        Err(e) => panic!("File not found {}", e),
+        Err(err) => panic!("{} {err}", game_lang_spec.messages.dict_not_found),
     };
 
     let mut words_seperate: Vec<String> = vec![];
@@ -102,7 +171,7 @@ fn main() {
 
             //check if dictionary contains illegal characters
             if !game_lang_spec.allowed_chars.contains(&char) && !illegal_chars.contains(&char) {
-                println!("WARNING: DICTIONARY CONTAINS ILLEGAL CHARACTER!: \"{char}\"");
+                println!("{} \"{char}\"", game_lang_spec.messages.warn_dict_illegal);
                 illegal_chars.push(char);
             }
         }
@@ -141,39 +210,32 @@ fn main() {
         loop {
             //prints all guesses
             println!();
-            if guess_counter != 0 {
-                println!("Guesses so far:");
-                for history in char_history.iter() {
-                    print_colored(&history.1, &history.0, false);
-                }
-            }
-
             //last guess warning
             println!();
             if guess_counter == guess_max_number - 1 {
-                println!("Last guess!");
+                println!("{}", game_lang_spec.messages.guess_last);
             }
 
-            println!("Guess #{}", guess_counter + 1);
+            println!("{}{}", game_lang_spec.messages.guess_num, guess_counter + 1);
 
             //get user guess
             let mut user_guess: String;
             loop {
-                println!("Enter guess:");
+                println!("{}", game_lang_spec.messages.guess_query);
                 user_guess = user_input_to_lowercase();
 
                 if user_guess.len() != wordle_len {
-                    println!("Word is incorrect length!");
+                    println!("{}", game_lang_spec.messages.err_word_lenght);
                     println!("{}", user_guess.len());
                     continue;
                 } else if !words_of_len.contains(&&user_guess) {
-                    println!("This word doesn't exist!");
+                    println!("{}", game_lang_spec.messages.err_word_not_exist);
                     continue;
                 }
                 break;
             }
             guess_all.push(user_guess.clone());
-            let mut user_guess_char: Vec<char> = user_guess.chars().collect();
+            let user_guess_char: Vec<char> = user_guess.chars().collect();
 
             //check chars of user input and update their state
             let mut chars_all_correct: bool = true;
@@ -199,22 +261,29 @@ fn main() {
             //check if guess if correct
             if chars_all_correct {
                 println!();
-                println!("That is the wordle! You win!");
-                if !user_input_yes_no_bool("Would you like to play again? y/n:") {
+                println!("{}", game_lang_spec.messages.user_won);
+                if !user_input_yes_no_bool(&game_lang_spec) {
                     play_again = false;
                 }
                 break;
             }
-
+            
+            //print chars' states in keyboard layout
+            println!();
             print_colored(&chars_state, &game_lang_spec.chars_order, true);
+            //print guesses
+            println!("\n{}", game_lang_spec.messages.guesses_so_far);
+            for history in char_history.iter() {
+                print_colored(&history.1, &history.0, false);
+            }
 
             //guesses counter and checker
             guess_counter += 1;
             if guess_counter == guess_max_number {
                 println!();
-                println!("You ran out of guesses! You lost!");
-                println!("The wordle was {}", wordle.to_uppercase().green().bold());
-                if !user_input_yes_no_bool("Would you like to play again? y/n:") {
+                println!("{}", game_lang_spec.messages.user_lost);
+                println!("{} {}",game_lang_spec.messages.wordle_was, wordle.to_uppercase().green().bold());
+                if !user_input_yes_no_bool(&game_lang_spec) {
                     play_again = false;
                 }
                 break;
@@ -222,23 +291,23 @@ fn main() {
         }
     }
 
-    println!("Bye!");
+    println!("{}", game_lang_spec.messages.goodbye);
 }
 
-fn user_input_yes_no_bool(line: &str) -> bool {
+fn user_input_yes_no_bool(game_lang_spec: &LanguageSpecs) -> bool {
     //returns true if user says yes, asks again if input is invalid
     loop {
-        println!("{line}");
+        println!("{}", game_lang_spec.messages.play_again_query);
         let user_input = user_input_to_lowercase();
-        if user_input == String::from("y") || user_input == String::from("yes") {
+        if user_input == game_lang_spec.messages.user_input_yes.chars().next().unwrap().to_string() || user_input == game_lang_spec.messages.user_input_yes {
             //user typed yes
             return true;
-        } else if user_input == String::from("n") || user_input == String::from("no") {
+        } else if user_input == game_lang_spec.messages.user_input_no.chars().next().unwrap().to_string() || user_input == game_lang_spec.messages.user_input_no {
             //user typed no
             return false;
         } else {
             print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
-            println!("Invalid input!");
+            println!("{}", game_lang_spec.messages.err_invalid_input);
             continue;
         }
     }
@@ -248,7 +317,9 @@ fn user_input_to_lowercase() -> String {
     let mut user_input = String::new();
     match io::stdin().read_line(&mut user_input) {
         Ok(_) => (),
-        Err(err) => println!("Error! {err}"),
+        Err(err) => {
+            println!("Error! {err}");
+        }
     }
     user_input = String::from(user_input.trim());
     user_input.to_lowercase()
@@ -288,19 +359,18 @@ fn print_char_state_to_color(state: &CharState, char: &char) {
 
 fn query_lang() -> Language {
     loop {
-        println!("Languages:");
         println!("1.English");
-        println!("2.Bulgarian");
+        println!("2.Български");
         println!("Choose Language: ");
         let user_input = user_input_to_lowercase();
         if user_input == String::from("1") || user_input == String::from("english") {
             return Language::English;
         }
 
-        if user_input == String::from("2") || user_input == String::from("bulgarian") {
+        if user_input == String::from("2") || user_input == String::from("български") {
             return Language::Bulgarian;
         }
-
+        //exception to printing lang specific message: lang isn't being chosen yet
         println!("Error: Invalid input!");
     }
 }
