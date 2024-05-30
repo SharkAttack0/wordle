@@ -8,7 +8,6 @@ use std::path::Path;
 use std::vec;
 use strum::*;
 
-
 const CHARS_ALLOWED_ENGLISH: [char; 26] = [
     'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's',
     't', 'u', 'v', 'w', 'x', 'y', 'z',
@@ -26,16 +25,16 @@ const CHARS_ORDER_BULGARIAN: [char; 32] = [
     'г', 'х', 'й', 'к', 'л', '\n', 'з', 'ь', 'ц', 'ж', 'б', 'н', 'м',
 ];
 
-
 //bulgarian 'ш','щ' debugging conclusion - error "stream did not contain valid UTF-8" is not because of
 //the bulgarian chars, but rather the backspace being pressed when language is bulgarian
-//could be wsl terminal's fault, idk if program can handle that at all 
+//could be wsl terminal's fault, idk if program can handle that at all
 
 //edit dictionaries
-//full bulgarian language support
+//refractor
 
 //when a char is used twice in a guess and one of the chars is updated, the other gets wrongly updated as well
-
+//need instances of repeating chars and proper updates on their state
+//Vec<(char, CharState)> perhaps
 
 #[derive(Debug, PartialEq, EnumIter, Clone, Copy)]
 enum CharState {
@@ -44,6 +43,7 @@ enum CharState {
     UsedIncorPos,
     UsedNotInWordle,
 }
+
 #[derive(Debug, PartialEq, Eq, Hash)]
 enum Language {
     English,
@@ -62,13 +62,12 @@ struct Messages {
     warn_dict_illegal: String,
     guess_last: String,
     dict_not_found: String,
-    err: String, 
+    err: String,
     err_invalid_input: String,
     err_word_lenght: String,
     err_word_not_exist: String,
     user_input_yes: String,
     user_input_no: String,
-
 }
 
 struct LanguageSpecs<'a> {
@@ -91,7 +90,7 @@ fn main() {
         warn_dict_illegal: String::from("WARNING: DICTIONARY CONTAINS ILLEGAL CHARACTER!:"),
         guess_last: String::from("Last guess!"),
         dict_not_found: String::from("Dictionary not found!"),
-        err: String::from("Error!"), 
+        err: String::from("Error!"),
         err_invalid_input: String::from("Invalid input!"),
         err_word_lenght: String::from("The word's length is incorrect!"),
         err_word_not_exist: String::from("The word doesn't exist!"),
@@ -111,7 +110,7 @@ fn main() {
         warn_dict_illegal: String::from("ВНИМАНИЕ: РЕЧНИКЪТ СЪДЪРЖА НЕЗАКОННИ СИМВОЛИ!:"),
         guess_last: String::from("Последна догадка!"),
         dict_not_found: String::from("Речник не е намерен!"),
-        err: String::from("Грешка!"), 
+        err: String::from("Грешка!"),
         err_invalid_input: String::from("Невалидно въвеждане!"),
         err_word_lenght: String::from("Дължината на думата е неправилна!"),
         err_word_not_exist: String::from("Тази дума не съществува!"),
@@ -135,21 +134,19 @@ fn main() {
 
     //choose language
     let chosen_lang: Language = query_lang();
-
-    let game_lang_spec :LanguageSpecs;
-    let wordle_len:usize;
+    let game_lang_spec: LanguageSpecs;
+    let wordle_len: usize;
 
     match chosen_lang {
         Language::English => {
             game_lang_spec = lang_spec_en;
             wordle_len = 5;
-        },
+        }
         Language::Bulgarian => {
             game_lang_spec = lang_spec_bul;
             wordle_len = 10;
-        },
+        }
     }
-
 
     //read file
     let words: String = match fs::read_to_string(game_lang_spec.dictionary_path) {
@@ -196,16 +193,16 @@ fn main() {
         }
         //print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
         let mut guess_counter = 0;
-        let wordle = words_of_len[rng.gen_range(0..words_of_len.len())];
-
-        let mut chars_state: HashMap<char, CharState> = HashMap::new();
+        //let wordle = words_of_len[rng.gen_range(0..words_of_len.len())];
+        //delete this
+        let wordle = &String::from("aoaoa");
+        let mut chars_state_global: HashMap<char, CharState> = HashMap::new();
 
         //initialize chars with "unused" state
         for char in game_lang_spec.allowed_chars.iter() {
-            chars_state.insert(*char, CharState::Unused);
+            chars_state_global.insert(*char, CharState::Unused);
         }
-        let mut guess_all: Vec<String> = vec![];
-        let mut char_history: Vec<(Vec<char>, HashMap<char, CharState>)> = vec![];
+        let mut char_history: Vec<Vec<(char, CharState)>> = Vec::with_capacity(guess_max_number);
         //game loop
         loop {
             //prints all guesses
@@ -226,37 +223,73 @@ fn main() {
 
                 if user_guess.len() != wordle_len {
                     println!("{}", game_lang_spec.messages.err_word_lenght);
-                    println!("{}", user_guess.len());
                     continue;
                 } else if !words_of_len.contains(&&user_guess) {
                     println!("{}", game_lang_spec.messages.err_word_not_exist);
-                    continue;
+                    //NOTE: UNCOMMENT continue;
+                    //continue;
                 }
                 break;
             }
-            guess_all.push(user_guess.clone());
-            let user_guess_char: Vec<char> = user_guess.chars().collect();
+            let mut user_guess_char: Vec<(char, CharState)> = Vec::with_capacity(wordle_len);
+            let mut chars_all_correct = true;
 
-            //check chars of user input and update their state
-            let mut chars_all_correct: bool = true;
-
-            for (index, char) in user_guess_char.iter().enumerate() {
+            for (index, char) in user_guess.chars().enumerate() {
                 let wordle_chars: Vec<char> = wordle.chars().collect();
-                if *char == wordle_chars[index] {
+                if char == wordle_chars[index] {
                     //char in correct place
-                    chars_state.insert(*char, CharState::UsedCorPos);
+                    chars_state_global.insert(char, CharState::UsedCorPos);
+                    user_guess_char.push((char, CharState::UsedCorPos));
+                //                    if user_guess_char.contains(&(char, CharState::UsedIncorPos)) {
+                //                        for rep_char in user_guess_char.iter() {
+                //                            if rep_char == &(char, CharState::UsedIncorPos) {
+                //                                user_guess_char[user_guess_char
+                //                                    .iter()
+                //                                    .position(|&r| r == (char, CharState::UsedIncorPos))
+                //                                    .unwrap()] = (char, CharState::UsedNotInWordle);
+                //                            }
+                //                        }
+                //                    }
                 } else {
                     chars_all_correct = false;
                     if wordle_chars.contains(&char) {
                         //char in incorrect place
-                        chars_state.insert(*char, CharState::UsedIncorPos);
+                        chars_state_global.insert(char, CharState::UsedIncorPos);
+                        user_guess_char.push((char, CharState::UsedIncorPos));
+                        //TO FIX GIVING INCORPOS WHEN SAME CHAR IS IN CORPOS
+                        //COUNT HOW MANY TIMES CHAR IS IN WORDLE - wordle_char_rep
+                        //COUNT HOW MANY CHAR OF CORPOS IN GUESS - user_guess_char_rep_corpos
+                        // if wordle_char_rep > user_guess_char_rep_corpos => char = incorpos
+                        // else char = notinwordle
                     } else {
                         //char not in wordle
-                        chars_state.insert(*char, CharState::UsedNotInWordle);
+                        chars_state_global.insert(char, CharState::UsedNotInWordle);
+                        user_guess_char.push((char, CharState::UsedNotInWordle));
                     }
                 }
             }
-            char_history.push((user_guess_char.clone(), chars_state.clone()));
+
+            for (char, char_state) in user_guess_char.iter_mut() {
+                if char_state == &CharState::UsedIncorPos {
+                    let mut char_guess_rep_counter = 0;
+                    let mut char_wordle_rep_counter = 0;
+                    for (char_guess_rep, rep_char_state) in user_guess_char.iter() {
+                        if char_guess_rep == char {
+                            char_guess_rep_counter += 1;
+                        }
+                    }
+                    for char_wordle_rep in wordle.chars() {
+                        if char_wordle_rep == *char {
+                            char_wordle_rep_counter += 1;
+                        }
+                    }
+                    if char_wordle_rep_counter > char_wordle_rep_counter {
+                        *char_state = CharState::UsedNotInWordle;
+                    }
+                }
+            }
+
+            char_history.push(user_guess_char.clone());
 
             //check if guess if correct
             if chars_all_correct {
@@ -267,14 +300,17 @@ fn main() {
                 }
                 break;
             }
-            
+
             //print chars' states in keyboard layout
             println!();
-            print_colored(&chars_state, &game_lang_spec.chars_order, true);
+            print_colored_layout(&chars_state_global, &game_lang_spec.chars_order, true);
             //print guesses
             println!("\n{}", game_lang_spec.messages.guesses_so_far);
             for history in char_history.iter() {
-                print_colored(&history.1, &history.0, false);
+                for (char, char_state) in history {
+                    print_char_state_to_color(char_state, char);
+                }
+                println!();
             }
 
             //guesses counter and checker
@@ -282,7 +318,11 @@ fn main() {
             if guess_counter == guess_max_number {
                 println!();
                 println!("{}", game_lang_spec.messages.user_lost);
-                println!("{} {}",game_lang_spec.messages.wordle_was, wordle.to_uppercase().green().bold());
+                println!(
+                    "{} {}",
+                    game_lang_spec.messages.wordle_was,
+                    wordle.to_uppercase().green().bold()
+                );
                 if !user_input_yes_no_bool(&game_lang_spec) {
                     play_again = false;
                 }
@@ -299,10 +339,28 @@ fn user_input_yes_no_bool(game_lang_spec: &LanguageSpecs) -> bool {
     loop {
         println!("{}", game_lang_spec.messages.play_again_query);
         let user_input = user_input_to_lowercase();
-        if user_input == game_lang_spec.messages.user_input_yes.chars().next().unwrap().to_string() || user_input == game_lang_spec.messages.user_input_yes {
+        if user_input
+            == game_lang_spec
+                .messages
+                .user_input_yes
+                .chars()
+                .next()
+                .unwrap()
+                .to_string()
+            || user_input == game_lang_spec.messages.user_input_yes
+        {
             //user typed yes
             return true;
-        } else if user_input == game_lang_spec.messages.user_input_no.chars().next().unwrap().to_string() || user_input == game_lang_spec.messages.user_input_no {
+        } else if user_input
+            == game_lang_spec
+                .messages
+                .user_input_no
+                .chars()
+                .next()
+                .unwrap()
+                .to_string()
+            || user_input == game_lang_spec.messages.user_input_no
+        {
             //user typed no
             return false;
         } else {
@@ -325,7 +383,11 @@ fn user_input_to_lowercase() -> String {
     user_input.to_lowercase()
 }
 
-fn print_colored(chars_state: &HashMap<char, CharState>, chars_to_color: &Vec<char>, space: bool) {
+fn print_colored_layout(
+    chars_state: &HashMap<char, CharState>,
+    chars_to_color: &Vec<char>,
+    space: bool,
+) {
     for char in chars_to_color {
         if *char == '\n' {
             println!();
