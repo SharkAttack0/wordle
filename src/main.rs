@@ -193,9 +193,9 @@ fn main() {
         }
         //print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
         let mut guess_counter = 0;
-        //let wordle = words_of_len[rng.gen_range(0..words_of_len.len())];
+        let wordle = words_of_len[rng.gen_range(0..words_of_len.len())];
         //delete this
-        let wordle = &String::from("aoaoa");
+        //let wordle = &String::from("aoaoa");
         let mut chars_state_global: HashMap<char, CharState> = HashMap::new();
 
         //initialize chars with "unused" state
@@ -227,7 +227,7 @@ fn main() {
                 } else if !words_of_len.contains(&&user_guess) {
                     println!("{}", game_lang_spec.messages.err_word_not_exist);
                     //NOTE: UNCOMMENT continue;
-                    //continue;
+                    continue;
                 }
                 break;
             }
