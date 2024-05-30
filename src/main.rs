@@ -256,11 +256,6 @@ fn main() {
                         //char in incorrect place
                         chars_state_global.insert(char, CharState::UsedIncorPos);
                         user_guess_char.push((char, CharState::UsedIncorPos));
-                        //TO FIX GIVING INCORPOS WHEN SAME CHAR IS IN CORPOS
-                        //COUNT HOW MANY TIMES CHAR IS IN WORDLE - wordle_char_rep
-                        //COUNT HOW MANY CHAR OF CORPOS IN GUESS - user_guess_char_rep_corpos
-                        // if wordle_char_rep > user_guess_char_rep_corpos => char = incorpos
-                        // else char = notinwordle
                     } else {
                         //char not in wordle
                         chars_state_global.insert(char, CharState::UsedNotInWordle);
@@ -269,23 +264,55 @@ fn main() {
                 }
             }
 
-            for (char, char_state) in user_guess_char.iter_mut() {
+            //TO FIX GIVING INCORPOS WHEN SAME CHAR IS IN CORPOS
+            //if char is UsedIncorPos{
+            //for _ in guess => if char_state == UsedCorPos
+            //remove char from clone
+            //}
+            //if wordle.contains(char) => incorrect {else => UsedNotInWordle}
+            //
+            //            for (_, char_state) in user_guess_char.iter_mut() {
+            //                if char_state == &CharState::UsedIncorPos {
+            //                    let mut guess_temp = user_guess_char.clone();
+            //                    let mut wordle_temp: Vec<char> = wordle.chars().collect();
+            //                    for (index, (char_rep, char_state_rep)) in user_guess_char.iter().enumerate() {
+            //                        if char_state_rep == &CharState::UsedCorPos {
+            //                            _ = std::mem::replace(&mut guess_temp[index].0, ' ');
+            //                            _ = std::mem::replace(&mut wordle_temp[index], ' ');
+            //                        }
+            //                    }
+            //                    for (index, (char_temp, char_state_temp)) in guess_temp.iter_mut().enumerate() {
+            //                        if *char_state_temp == CharState::UsedIncorPos {
+            //                            if !wordle_temp.contains(char_temp) {
+            //                                user_guess_char[index].1 = CharState::UsedNotInWordle;
+            //                            }
+            //                        }
+            //                    }
+            //                }
+            //                break;
+            //            }
+
+            for (char, char_state) in user_guess_char.iter() {
                 if char_state == &CharState::UsedIncorPos {
                     let mut char_guess_rep_counter = 0;
+                    let mut char_wordle_cor_pos_counter = 0;
+                    //THIS IS THE SOLUTION:
                     let mut char_wordle_rep_counter = 0;
-                    for (char_guess_rep, rep_char_state) in user_guess_char.iter() {
-                        if char_guess_rep == char {
+                    for (char_rep, _) in user_guess_char.iter() {
+                        if *char == *char_rep {
                             char_guess_rep_counter += 1;
+                            if wordle.contains(*char) {
+                                char_wordle_cor_pos_counter += 1;
+                            }
                         }
                     }
-                    for char_wordle_rep in wordle.chars() {
-                        if char_wordle_rep == *char {
-                            char_wordle_rep_counter += 1;
-                        }
+                    let char_rep_diff = char_guess_rep_counter - char_wordle_cor_pos_counter;
+
+                    if char_rep_diff > 0 {
+                        //more of same char than in wordle
                     }
-                    if char_wordle_rep_counter > char_wordle_rep_counter {
-                        *char_state = CharState::UsedNotInWordle;
-                    }
+                    //aoaoa
+                    //ooooo
                 }
             }
 
