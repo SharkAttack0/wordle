@@ -32,10 +32,6 @@ const CHARS_ORDER_BULGARIAN: [char; 32] = [
 //edit dictionaries
 //refractor
 
-//when a char is used twice in a guess and one of the chars is updated, the other gets wrongly updated as well
-//need instances of repeating chars and proper updates on their state
-//Vec<(char, CharState)> perhaps
-
 #[derive(Debug, PartialEq, EnumIter, Clone, Copy)]
 enum CharState {
     Unused,
@@ -51,23 +47,22 @@ enum Language {
 }
 
 struct Messages {
-    user_lost: String,
-    user_won: String,
-    guess_num: String,
-    wordle_was: String,
-    play_again_query: String,
-    guess_query: String,
-    guesses_so_far: String,
-    goodbye: String,
-    warn_dict_illegal: String,
-    guess_last: String,
-    dict_not_found: String,
-    err: String,
-    err_invalid_input: String,
-    err_word_lenght: String,
-    err_word_not_exist: String,
-    user_input_yes: String,
-    user_input_no: String,
+    user_lost: &'static str,
+    user_won: &'static str,
+    guess_num: &'static str,
+    wordle_was: &'static str,
+    play_again_query: &'static str,
+    guess_query: &'static str,
+    guesses_so_far: &'static str,
+    goodbye: &'static str,
+    warn_dict_illegal: &'static str,
+    guess_last: &'static str,
+    dict_not_found: &'static str,
+    err_invalid_input: &'static str,
+    err_word_lenght: &'static str,
+    err_word_not_exist: &'static str,
+    user_input_yes: &'static str,
+    user_input_no: &'static str,
 }
 
 struct LanguageSpecs<'a> {
@@ -79,43 +74,41 @@ struct LanguageSpecs<'a> {
 
 fn main() {
     let msg_en: Messages = Messages {
-        user_lost: String::from("You ran out of guesses! You lost!"),
-        user_won: String::from("Congradulation! You won!"),
-        guess_num: String::from("Guess #"),
-        wordle_was: String::from("The wordle was"),
-        play_again_query: String::from("Would you like to play again? y/n"),
-        guess_query: String::from("Input guess:"),
-        guesses_so_far: String::from("Your guesses so far:"),
-        goodbye: String::from("Goodbye!"),
-        warn_dict_illegal: String::from("WARNING: DICTIONARY CONTAINS ILLEGAL CHARACTER!:"),
-        guess_last: String::from("Last guess!"),
-        dict_not_found: String::from("Dictionary not found!"),
-        err: String::from("Error!"),
-        err_invalid_input: String::from("Invalid input!"),
-        err_word_lenght: String::from("The word's length is incorrect!"),
-        err_word_not_exist: String::from("The word doesn't exist!"),
-        user_input_yes: String::from("yes"),
-        user_input_no: String::from("no"),
+        user_lost: "You ran out of guesses! You lost!",
+        user_won: "Congradulation! You won!",
+        guess_num: "Guess #",
+        wordle_was: "The wordle was",
+        play_again_query: "Would you like to play again? y/n",
+        guess_query: "Input guess:",
+        guesses_so_far: "Your guesses so far:",
+        goodbye: "Goodbye!",
+        warn_dict_illegal: "WARNING: DICTIONARY CONTAINS ILLEGAL CHARACTER!:",
+        guess_last: "Last guess!",
+        dict_not_found: "Dictionary not found!",
+        err_invalid_input: "Invalid input!",
+        err_word_lenght:"The word's length is incorrect!",
+        err_word_not_exist: "The word doesn't exist!",
+        user_input_yes: "yes",
+        user_input_no: "no",
     };
 
     let msg_bul: Messages = Messages {
-        user_lost: String::from("Докадките ти свършиха! Ти загуби!"),
-        user_won: String::from("Поздравления! Ти спечели!"),
-        guess_num: String::from("Догадка #"),
-        wordle_was: String::from("Думата беше"),
-        play_again_query: String::from("Искаш ли да играеш пак? д/н"),
-        guess_query: String::from("Въведи догадка:"),
-        guesses_so_far: String::from("Твоите догадки дотук:"),
-        goodbye: String::from("Довиждане!"),
-        warn_dict_illegal: String::from("ВНИМАНИЕ: РЕЧНИКЪТ СЪДЪРЖА НЕЗАКОННИ СИМВОЛИ!:"),
-        guess_last: String::from("Последна догадка!"),
-        dict_not_found: String::from("Речник не е намерен!"),
-        err: String::from("Грешка!"),
-        err_invalid_input: String::from("Невалидно въвеждане!"),
-        err_word_lenght: String::from("Дължината на думата е неправилна!"),
-        err_word_not_exist: String::from("Тази дума не съществува!"),
-        user_input_yes: String::from("да"),
-        user_input_no: String::from("не"),
+        user_lost: "Докадките ти свършиха! Ти загуби!",
+        user_won: "Поздравления! Ти спечели!",
+        guess_num: "Догадка #",
+        wordle_was: "Думата беше",
+        play_again_query: "Искаш ли да играеш пак? д/н",
+        guess_query: "Въведи догадка:",
+        guesses_so_far: "Твоите догадки дотук:",
+        goodbye: "Довиждане!",
+        warn_dict_illegal: "ВНИМАНИЕ: РЕЧНИКЪТ СЪДЪРЖА НЕЗАКОННИ СИМВОЛИ!:",
+        guess_last: "Последна догадка!",
+        dict_not_found: "Речник не е намерен!",
+        err_invalid_input: "Невалидно въвеждане!",
+        err_word_lenght: "Дължината на думата е неправилна!",
+        err_word_not_exist: "Тази дума не съществува!",
+        user_input_yes: "да",
+        user_input_no: "не",
     };
 
     let lang_spec_en = LanguageSpecs {
@@ -194,8 +187,6 @@ fn main() {
         //print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
         let mut guess_counter = 0;
         let wordle = words_of_len[rng.gen_range(0..words_of_len.len())];
-        //delete this
-        //let wordle = &String::from("aoaoa");
         let mut chars_state_global: HashMap<char, CharState> = HashMap::new();
 
         //initialize chars with "unused" state
@@ -226,7 +217,6 @@ fn main() {
                     continue;
                 } else if !words_of_len.contains(&&user_guess) {
                     println!("{}", game_lang_spec.messages.err_word_not_exist);
-                    //NOTE: UNCOMMENT continue;
                     continue;
                 }
                 break;
@@ -240,85 +230,63 @@ fn main() {
                     //char in correct place
                     chars_state_global.insert(char, CharState::UsedCorPos);
                     user_guess_char.push((char, CharState::UsedCorPos));
-                //                    if user_guess_char.contains(&(char, CharState::UsedIncorPos)) {
-                //                        for rep_char in user_guess_char.iter() {
-                //                            if rep_char == &(char, CharState::UsedIncorPos) {
-                //                                user_guess_char[user_guess_char
-                //                                    .iter()
-                //                                    .position(|&r| r == (char, CharState::UsedIncorPos))
-                //                                    .unwrap()] = (char, CharState::UsedNotInWordle);
-                //                            }
-                //                        }
-                //                    }
                 } else {
                     chars_all_correct = false;
                     if wordle_chars.contains(&char) {
-                        //char in incorrect place
-                        chars_state_global.insert(char, CharState::UsedIncorPos);
                         user_guess_char.push((char, CharState::UsedIncorPos));
+                        if chars_state_global.get(&char).unwrap() != &CharState::UsedCorPos {
+                            //char in incorrect place
+                            chars_state_global.insert(char, CharState::UsedIncorPos);  
+                        } 
                     } else {
                         //char not in wordle
                         chars_state_global.insert(char, CharState::UsedNotInWordle);
                         user_guess_char.push((char, CharState::UsedNotInWordle));
                     }
-                }
+            }
             }
 
-            //TO FIX GIVING INCORPOS WHEN SAME CHAR IS IN CORPOS
-            //if char is UsedIncorPos{
-            //for _ in guess => if char_state == UsedCorPos
-            //remove char from clone
-            //}
-            //if wordle.contains(char) => incorrect {else => UsedNotInWordle}
-            //
-            //            for (_, char_state) in user_guess_char.iter_mut() {
-            //                if char_state == &CharState::UsedIncorPos {
-            //                    let mut guess_temp = user_guess_char.clone();
-            //                    let mut wordle_temp: Vec<char> = wordle.chars().collect();
-            //                    for (index, (char_rep, char_state_rep)) in user_guess_char.iter().enumerate() {
-            //                        if char_state_rep == &CharState::UsedCorPos {
-            //                            _ = std::mem::replace(&mut guess_temp[index].0, ' ');
-            //                            _ = std::mem::replace(&mut wordle_temp[index], ' ');
-            //                        }
-            //                    }
-            //                    for (index, (char_temp, char_state_temp)) in guess_temp.iter_mut().enumerate() {
-            //                        if *char_state_temp == CharState::UsedIncorPos {
-            //                            if !wordle_temp.contains(char_temp) {
-            //                                user_guess_char[index].1 = CharState::UsedNotInWordle;
-            //                            }
-            //                        }
-            //                    }
-            //                }
-            //                break;
-            //            }
-
+            let mut char_change_not_in_wordle: HashMap<char, u8> = HashMap::new();
             for (char, char_state) in user_guess_char.iter() {
-                if char_state == &CharState::UsedIncorPos {
+                if char_state == &CharState::UsedIncorPos && !char_change_not_in_wordle.contains_key(char) {
+                    char_change_not_in_wordle.entry(*char).or_insert(0);
                     let mut char_guess_rep_counter = 0;
-                    let mut char_wordle_cor_pos_counter = 0;
-                    //THIS IS THE SOLUTION:
+                    let mut char_cor_pos_counter = 0;
                     let mut char_wordle_rep_counter = 0;
-                    for (char_rep, _) in user_guess_char.iter() {
+                    for (char_rep, char_state_rep) in user_guess_char.iter() {
                         if *char == *char_rep {
                             char_guess_rep_counter += 1;
-                            if wordle.contains(*char) {
-                                char_wordle_cor_pos_counter += 1;
+                            if *char_state_rep == CharState::UsedCorPos {
+                                char_cor_pos_counter += 1;
                             }
                         }
                     }
-                    let char_rep_diff = char_guess_rep_counter - char_wordle_cor_pos_counter;
-
-                    if char_rep_diff > 0 {
-                        //more of same char than in wordle
+                    for char_wordle in wordle.chars() {
+                        if char_wordle == *char {
+                           char_wordle_rep_counter += 1;
+                        }
                     }
-                    //aoaoa
-                    //ooooo
+                    let char_guess_diff = char_guess_rep_counter - char_cor_pos_counter;
+                    let char_wordle_diff = char_wordle_rep_counter - char_cor_pos_counter;
+                    
+                    if char_guess_diff > char_wordle_diff {
+                        //number of chars that should be counted as not in wordle
+                        let char_not_in_wordle_guess: u8 = char_guess_diff - char_wordle_diff;
+                        char_change_not_in_wordle.insert(*char, char_not_in_wordle_guess);
+                    }
+                }
+            }
+
+            for (char, char_state) in user_guess_char.iter_mut() {
+                if *char_state == CharState::UsedIncorPos && char_change_not_in_wordle.get(char).unwrap() != &0 {
+                    *char_state = CharState::UsedNotInWordle;
+                    char_change_not_in_wordle.entry(*char).and_modify(|e| { *e -= 1 });
                 }
             }
 
             char_history.push(user_guess_char.clone());
 
-            //check if guess if correct
+            //check if guess is correct
             if chars_all_correct {
                 println!();
                 println!("{}", game_lang_spec.messages.user_won);
@@ -374,7 +342,7 @@ fn user_input_yes_no_bool(game_lang_spec: &LanguageSpecs) -> bool {
                 .next()
                 .unwrap()
                 .to_string()
-            || user_input == game_lang_spec.messages.user_input_yes
+            || &user_input == game_lang_spec.messages.user_input_yes
         {
             //user typed yes
             return true;
@@ -386,7 +354,7 @@ fn user_input_yes_no_bool(game_lang_spec: &LanguageSpecs) -> bool {
                 .next()
                 .unwrap()
                 .to_string()
-            || user_input == game_lang_spec.messages.user_input_no
+            || &user_input == game_lang_spec.messages.user_input_no
         {
             //user typed no
             return false;

@@ -1,1 +1,1 @@
-/home/mitrev/repos/rust/wordle/target/debug/wordle: /home/mitrev/repos/rust/wordle/src/main.rs
+/mnt/d/repos/rust/wordle/target/debug/wordle: /mnt/d/repos/rust/wordle/src/main.rs
